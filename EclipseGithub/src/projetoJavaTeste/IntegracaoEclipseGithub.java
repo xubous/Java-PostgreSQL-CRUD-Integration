@@ -11,5 +11,6 @@ public class IntegracaoEclipseGithub {
 		int y = sc.nextInt ( );
 		
 		System.out.println ( x + y );
+		sc.close ( );
 	}
 }
