@@ -2,7 +2,8 @@ package projetoJavaTeste;
 
 import java.util.Scanner;
 
-public class IntegracaoEclipseGithub {
+public class IntegracaoEclipseGithub 
+{
 	public static void main ( String [ ] args )
 	{
 		Scanner sc = new Scanner ( System.in );
