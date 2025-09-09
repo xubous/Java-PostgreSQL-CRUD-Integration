@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciador de Comidas</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            color: #333;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="number"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button.delete {
+            background-color: #dc3545;
+        }
+        button.delete:hover {
+            background-color: #c82333;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f8f9fa;
+        }
+        .message {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🍕 Gerenciador de Comidas</h1>
+
+        <!-- Formulário para Adicionar/Editar -->
+        <div class="form-section">
+            <h2 id="form-title">Adicionar Nova Comida</h2>
+            
+            <div id="message" class="message" style="display: none;"></div>
+            
+            <form id="comidaForm">
+                <input type="hidden" id="actionType" value="add">
+                <input type="hidden" id="comidaId">
+                
+                <div class="form-group">
+                    <label for="id">ID:</label>
+                    <input type="number" id="id" name="id" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="quantidade">Quantidade:</label>
+                    <input type="number" id="quantidade" name="quantidade" required min="1">
+                </div>
+                
+                <div class="form-group">
+                    <label for="valor">Valor (R$):</label>
+                    <input type="number" id="valor" name="valor" step="0.01" required min="0.01">
+                </div>
+                
+                <button type="submit" id="submitBtn">Adicionar Comida</button>
+                <button type="button" id="cancelBtn" style="display: none;">Cancelar Edição</button>
+            </form>
+        </div>
+
+        <!-- Lista de Comidas -->
+        <div class="list-section">
+            <h2>Comidas Cadastradas</h2>
+            
+            <button type="button" onclick="carregarComidas()">🔄 Atualizar Lista</button>
+            
+            <div id="loading" style="display: none;">Carregando...</div>
+            
+            <table id="comidasTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Quantidade</th>
+                        <th>Valor (R$)</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="comidasBody">
+                    <!-- Os dados serão preenchidos via JavaScript -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // Função para mostrar mensagens
+        function showMessage(text, type) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.textContent = text;
+            messageDiv.className = `message ${type}`;
+            messageDiv.style.display = 'block';
+            
+            setTimeout(() => {
+                messageDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        // Função para carregar a lista de comidas
+        async function carregarComidas() {
+            const loading = document.getElementById('loading');
+            const tbody = document.getElementById('comidasBody');
+            
+            loading.style.display = 'block';
+            tbody.innerHTML = '';
+            
+            try {
+                const response = await fetch('http://localhost:4567/comidas');
+                const comidas = await response.json();
+                
+                if (comidas.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">Nenhuma comida cadastrada</td></tr>';
+                    return;
+                }
+                
+                comidas.forEach(comida => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${comida.id}</td>
+                        <td>${comida.quantidade}</td>
+                        <td>R$ ${comida.valor.toFixed(2)}</td>
+                        <td>
+                            <button onclick="editarComida(${comida.id}, ${comida.quantidade}, ${comida.valor})">✏️ Editar</button>
+                            <button class="delete" onclick="deletarComida(${comida.id})">🗑️ Excluir</button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+                
+            } catch (error) {
+                showMessage('Erro ao carregar comidas: ' + error.message, 'error');
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        // Função para adicionar/editar comida
+        async function salvarComida(event) {
+            event.preventDefault();
+            
+            const formData = new FormData(event.target);
+            const actionType = document.getElementById('actionType').value;
+            const comidaId = document.getElementById('comidaId').value;
+            
+            const comida = {
+                id: parseInt(formData.get('id')),
+                quantidade: parseInt(formData.get('quantidade')),
+                valor: parseFloat(formData.get('valor'))
+            };
+            
+            try {
+                let url = 'http://localhost:4567/comidas';
+                let method = 'POST';
+                
+                if (actionType === 'edit') {
+                    url = `http://localhost:4567/comidas/${comidaId}`;
+                    method = 'PUT';
+                }
+                
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(comida)
+                });
+                
+                if (response.ok) {
+                    const message = actionType === 'add' ? 'Comida adicionada com sucesso!' : 'Comida atualizada com sucesso!';
+                    showMessage(message, 'success');
+                    
+                    // Limpar formulário e recarregar lista
+                    document.getElementById('comidaForm').reset();
+                    resetForm();
+                    carregarComidas();
+                } else {
+                    throw new Error('Erro na requisição');
+                }
+                
+            } catch (error) {
+                showMessage('Erro ao salvar comida: ' + error.message, 'error');
+            }
+        }
+
+        // Função para editar comida
+        function editarComida(id, quantidade, valor) {
+            document.getElementById('form-title').textContent = 'Editar Comida';
+            document.getElementById('actionType').value = 'edit';
+            document.getElementById('comidaId').value = id;
+            document.getElementById('id').value = id;
+            document.getElementById('quantidade').value = quantidade;
+            document.getElementById('valor').value = valor;
+            document.getElementById('submitBtn').textContent = 'Atualizar Comida';
+            document.getElementById('cancelBtn').style.display = 'inline-block';
+            
+            // Rolar para o formulário
+            document.querySelector('.form-section').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Função para cancelar edição
+        function resetForm() {
+            document.getElementById('form-title').textContent = 'Adicionar Nova Comida';
+            document.getElementById('actionType').value = 'add';
+            document.getElementById('comidaId').value = '';
+            document.getElementById('comidaForm').reset();
+            document.getElementById('submitBtn').textContent = 'Adicionar Comida';
+            document.getElementById('cancelBtn').style.display = 'none';
+        }
+
+        // Função para deletar comida
+        async function deletarComida(id) {
+            if (!confirm(`Tem certeza que deseja excluir a comida com ID ${id}?`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`http://localhost:4567/comidas/${id}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    showMessage('Comida excluída com sucesso!', 'success');
+                    carregarComidas();
+                } else {
+                    throw new Error('Erro ao excluir comida');
+                }
+                
+            } catch (error) {
+                showMessage('Erro ao excluir comida: ' + error.message, 'error');
+            }
+        }
+
+        // Event listeners
+        document.getElementById('comidaForm').addEventListener('submit', salvarComida);
+        document.getElementById('cancelBtn').addEventListener('click', resetForm);
+
+        // Carregar comidas quando a página carregar
+        document.addEventListener('DOMContentLoaded', carregarComidas);
+    </script>
+</body>
+</html>
