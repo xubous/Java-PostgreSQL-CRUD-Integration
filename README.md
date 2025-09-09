@@ -110,6 +110,10 @@ The application demonstrates:
 
     Updating an existing product
 
+🆕 New JavaSpark Framework Integration
+
+The application now includes a web server component built with JavaSpark, a lightweight web framework that allows you to create web applications and REST APIs with minimal setup.
+
     Deleting a product
 
     Retrieving and displaying all products
