@@ -12,9 +12,9 @@ import com.google.gson.Gson;
 
 public class Main 
 {
-	private static String user = "postgres";
-	private static String password = "2305";
-	private static String url = "jdbc:postgresql://localhost:5432/Comidas";
+	private static String user = "";
+	private static String password = "";
+	private static String url = "jdbc:postgresql://localhost:";
 	private static Gson gson = new Gson ( );
 	
 	public static String [ ] toString ( List < Comida > foods )
@@ -220,4 +220,5 @@ public class Main
 			this.message = message;
 		}
 	}
+
 }
